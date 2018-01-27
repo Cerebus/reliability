@@ -18,7 +18,9 @@ def CI(C,N,z):
 # Monte Carlo Reliability algorithm 3 worker function
 # Input: A labeled graph, iterations to run, and a source and target node
 # Output: Number of successful observations and total number of observations
-def R3worker(G,I,s,d):
+#def R3worker(G,I,s,d):
+def R3worker(x):
+    G,I,s,d = x
     random.seed() # Gotcha:  Pool processes get the same PRNG state. Must reseed.
     C = 0
     for i in range(I):
@@ -35,15 +37,19 @@ def R3worker(G,I,s,d):
 # Monte Carlo Reliability algorithm 3 - parallel
 # Input: A labeled graph, the confidence interval target, and a source and target node
 # Output: Reliability probability, confidence interval
-def R3(G,I,s,d):
+#def R3(G,I,s,d):
+def R3(G, P, c, I, s, d):
     C = 0
     N = 1
     z = 1.96
     l,u = CI(C,N,z)
     # with Pool(processes=2) as p: 
-    while (u-l)>I:
+    #print('0: ',l,u)
+    while u-l > I:
+        #print('loop: ',l,u)
             # results = p.starmap(R3worker, [(G,10000,s,d),(G,10000,s,d)])
-        results = futures.map(R3worker, ((G,100,s,d),)*args.procs)
+        results = list(futures.map(R3worker, ((G,c,s,d),)*P))
+        #print('r: ', results)
         C += sum(c for c,_ in results)
         N += sum(n for _,n in results)
         l,u = CI(C,N,z)
@@ -51,9 +57,9 @@ def R3(G,I,s,d):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(usage='python3.6 -m scoop [scoop options] -- %(prog)s [options]',
-                                     epilog='Estimate reliability over a labeled network.\n
-                                     Queue depth should be at least equal to the number of
-                                     scoop workers.'
+                                     epilog='Estimate reliability over a labeled network.\n\
+                                     Queue depth should be at least equal to the number of\
+                                     scoop workers.',formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument('-p','--procs', type=int, default=1, help='queue depth')
     parser.add_argument('-c','--count', type=int, default=100, help='iterations per queue entry')
@@ -64,9 +70,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     G = nx.read_graphml(args.graph)
-    R, CI, N = R3(G, args.confint, args.startnode, args.endnode)
+    starttime = time.time()
+    R, CI, N = R3(G, args.procs, args.count, args.confint, args.startnode, args.endnode)
+    endtime = time.time()
     print('Trials: {}\nR: {:.5}\nLower bound: {:.5}\nUpper bound: {:.5}'.format(N, R, CI[0], CI[1]))
-
+    print('Time: ', endtime-starttime)
 
 
 
