@@ -4,6 +4,7 @@ import networkx as nx
 #import numpy.random as random
 import random
 from scoop import futures
+import pickle
 
 import cProfile
 
@@ -36,7 +37,9 @@ def R3worker(x):
     random.seed() # Gotcha:  Pool processes get the same PRNG state. Must reseed.
     C = 0
     for i in range(I):
-        g = G.copy()
+        # g = G.copy()
+        # networkx does deepcopy, which could be slow.  
+        g = pickle.loads(pickle.dumps(G))
         to_remove = []
         for e in list(g.edges):
             if random.random() > g.edges[e]['R']:
@@ -63,11 +66,11 @@ def R3(G, P, c, I, s, d):
     return C/N, CI(C,N,z), N    
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(usage='python3.6 -m scoop [scoop options] -- %(prog)s [options]',
-                                     epilog='Estimate reliability over a labeled network.\n\
-                                     Queue depth should be at least equal to the number of\
-                                     scoop workers.',formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+    parser = argparse.ArgumentParser()#usage='python3.6 -m scoop [scoop options] -- %(prog)s [options]',
+                                     #epilog='Estimate reliability over a labeled network.\n\
+                                     #Queue depth should be at least equal to the number of\
+                                     #scoop workers.',formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    #)
     parser.add_argument('-p','--procs', type=int, default=1, help='queue depth')
     parser.add_argument('-c','--count', type=int, default=100, help='iterations per queue entry')
     parser.add_argument('-ci','--confint',type=float, default=0.005, help='confidence interval threshold')

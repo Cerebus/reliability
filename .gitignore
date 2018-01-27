@@ -102,3 +102,6 @@ ENV/
 
 # backups
 *~
+
+# profiling
+*.profile
